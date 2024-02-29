@@ -1,0 +1,64 @@
+﻿# Описание API для
+## Аутентификация
+Конечная цель - получить токен, чтобы потом в запросах отправлять только его, без необходимости добавлять номер телефона каждый раз.  
+  
+Шаги следующие:
+1. На сервер отправляется **POST** запрос по пути `https://test186.ru:9080/mobile-api/customer/ask-sms`.  
+   Тело запроса должно содержать номер телефона, номер автомобиля и регион.    
+   Пример:
+```
+{
+   "phoneNumber": "+79999999999",
+   "plateNumber": "A001AA",
+   "plateRegion": "186"
+}
+```  
+2. Сервер начинает отправку СМС. В мобильное приложение возвращается пустой ответ с кодом **200**, если запрос прошёл удачно.  
+   Если номер телефона не удалось привести к единому формату (в идеале +79123456789), то возвращается ответ с кодом **409** Conflict.  
+   Если по какой-то другой причине данные не прошли валидацию, то возвращается ответ с кодом **403** Forbidden.  
+3. Пользователь ждёт СМС с кодом, вводит его, на сервер отправляется **GET** запрос по пути `https://test186.ru:9080/mobile-api/customer/login`.  
+   Тело запроса содержит телефон и код.  
+   Пример:  
+   ```json  
+   {
+       "phoneNumber": "+79999999999",
+       "code": "7834"
+   }
+   ```
+4. Сервер проверяет код и, если все хорошо, возвращает ответ со статусом **200**, в теле ответа содержится access и refresh токены и на всякий случай данные по пользователю:
+```json
+   {
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJQaG9uZU51bWJlciI6Ijc5OTk5OTk5OTk5IiwiUGxhdGVOdW1iZXIiOiJBMDAxQUEiLCJQbGF0ZVJlZ2lvbiI6IjE4NiJ9.NAI6N1-TKAvZEUDYmYH53Nz4q5yaDcZ1w7YQyKgrdEM",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJQaG9uZU51bWJlciI6Ijc5OTk5OTk5OTk5IiwiUGxhdGVOdW1iZXIiOiJBMDAxQUEiLCJQbGF0ZVJlZ2lvbiI6IjE4NiJ9.NAI6N1-TKAvZEUDYmYH53Nz4q5yaDcZ1w7YQyKgrdEM",
+       "phoneNumber": "+79999999999",
+       "plateNumber": "A001AA",
+       "plateRegion": "186",
+       "created": "2023-05-26T11:40:43.9082652Z"
+   }
+```
+
+   Если код не подходит, то возвращается ответ с кодом **401** Unauthorized.  
+5. Далее в каждом запросе в заголовке `Authorization` необходимо передавать access токен с префиксом *Bearer* в таком виде:  
+`Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJQaG9uZU51bWJlciI6Ijc5OTk5OTk5OTk5IiwiUGxhdGVOdW1iZXIiOiJBMDAxQUEiLCJQbGF0ZVJlZ2lvbiI6IjE4NiJ9.NAI6N1-TKAvZEUDYmYH53Nz4q5yaDcZ1w7YQyKgrdEM`
+
+
+## Обновление access токена
+Так как у access токена ограниченное время действия, когда оно истечет, все запросы к серверу будут возвращаться с ответом **401**.  
+
+Чтобы обновить токен, нужно отправить **POST** запрос по пути `mobile-api/customer/refresh`.  
+В заголовок `Authorization` необходимо добавить Refresh токен с тем же префиксом *Bearer*.  
+
+Если обновление токена произошло успешно, возвращается ответ **200**, в ответе будут новые access и refresh токены:
+
+```json
+{
+  "accessToken": "string",
+  "refreshToken": "string"
+}
+```  
+Если refresh токен не подошёл, возвращается ответ **401**, тогда необходимо, чтобы приложение выкинуло пользователя из учетной записи и снова показал страницу с вводом телефона, номера машины и региона.  
+
+> [!CAUTION]  
+> На сайте будут места, где отправляется одновременно несколько запросов. И если в этот момент access токен истечет, и 
+> оба запроса вызовут метод `mobile-api/customer/refresh`, то один обновит токены, а другой словит ответ 401 от сервера и деавторизует пользователя.  
+> Это *race condition* и его можно исправить буквально в две строчки. Например, [по инструкции](https://fuse8.ru/articles/how-to-avoid-race-condition).
