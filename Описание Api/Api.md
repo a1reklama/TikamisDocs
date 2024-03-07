@@ -71,9 +71,8 @@
 ```js
 let response = await fetch(URL+'/mobile-api/customer/qr-code');
 if (response.status == 409)
-   alert(await response.text());
-// Появляется сообщение для пользователя. 
-// В react native код будет другой, не помню, как там такое окно показать. 
+   Alert.alert('Внимание', await response.text())
+// Появляется сообщение для пользователя.
 ```
 
 ## Формат запроса к серверу
