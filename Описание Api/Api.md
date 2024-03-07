@@ -71,8 +71,8 @@
 ```js
 let response = await fetch(URL+'/mobile-api/customer/qr-code');
 if (response.status == 409)
-   Alert.alert('Внимание', await response.text())
-// Появляется сообщение для пользователя.
+  Alert.alert('Внимание', await response.text())
+  // Появляется сообщение для пользователя.
 ```
 
 ## Формат запроса к серверу
