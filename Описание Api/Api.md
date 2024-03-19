@@ -33,14 +33,14 @@
 - DELETE `mobile-api/customer/account` - удалить аккаунт и данные пользователя. 
 
 ### Раздел CarCenter
-- GET `mobile-api/carcenter/get-cities` - Получить список городов. Нужно для выбора на этапе записи. [ссылка](#get-mobile-apicarcenterget-cities)
-- GET `mobile-api/carcenter/{city}` - Получить список автосервисов, которые есть в определенном городе. Для этапа заказа. [ссылка](#get-mobile-apicarcentercity)
-- GET `mobile-api/carcenter/{centerId}` - Получить список работ по городу и ID автосервиса. Для этапа заказа.
+- GET `mobile-api/carcenter/get-cities` - Получить список городов. Нужно для выбора на этапе оформления записи. [ссылка](#get-mobile-apicarcenterget-cities)
+- GET `mobile-api/carcenter/{city}` - Получить список автосервисов, которые есть в определенном городе. Для этапа оформления записи. [ссылка](#get-mobile-apicarcentercity)
+- GET `mobile-api/carcenter/works/{centerId}` - Получить список работ по городу и ID автосервиса. Для этапа оформления записи. [ссылка](#get-mobile-apicarcenterworkscenterid)
 
 ### Раздел Cart
-- POST `mobile-api/cart` - добавить работу в корзину для заказа.
-- GET `mobile-api/cart` - получить корзину клиента.
-- DELETE `mobile-api/cart/{id}` - удалить услугу из корзины клиента.
+- POST `mobile-api/cart` - добавить работу в корзину для заказа. [ссылка](#post-mobile-apicart)
+- GET `mobile-api/cart` - получить корзину клиента. [ссылка](#get-mobile-apicart)
+- DELETE `mobile-api/cart/{id}` - удалить услугу из корзины клиента. [ссылка](#delete-mobile-apicartid)
 
 ### Раздел Order
 - GET `mobile-api/order/available-time/{centerId}` - Получить временные окна для записи на обслуживание.
@@ -171,14 +171,74 @@ if (response.status == 409)
 | slug     | Символьный код автосервиса в базе данных. Он потом нужен будет в последующих запросах.                                                                                                     |
 | mapLink  | Ссылка на карту в 2гис. Вроде в приложении переход по ссылке уже должен быть реализован. **Может быть `null`** (если директор ничего не настроил). Тогда пусть просто ничего не происходит |
 
-#### GET `mobile-api/carcenter/{centerId}`
+#### GET `mobile-api/carcenter/works/{centerId}`
 
 Метод используется на этапе записи, чтобы набить корзину услугами.  
 Для каждого автосервиса услуги могут иметь разную цену, поэтому и нужно уточнять автосервис.  
 
-Вообще, предполагается, что каждая услуга в корзине может быть только в одном экземпляре. 
-Вроде, в приложении иначе и нельзя.  
+Предполагается, что каждая услуга в корзине может быть только в одном экземпляре.  
 
 В запросе нужно передать `centerId`, который можно получить из поля `slug` в запросе GET `mobile-api/carcenter/{city}`.  
 
-**Сейчас изменяется формат этого запроса, позже добавлю его описание**
+Ответ будет выглядеть так:
+```json
+{
+  "items": [
+    {
+      "id": "БП-45678",
+      "sectionId": "1s",
+      "name": "Услуга из раздела Двигатель №1",
+      "price": 1500,
+      "sale": 1000,
+      "saleText": "Условия акции*",
+      "saleNote": "Примечание к акции*"
+    },
+    {...}
+  ],
+  "sections": [
+    { "id": "1s", "name": "Двигатель" },
+    { "id": "2s", "name": "Трансмиссия" }
+  ]
+}
+```
+
+| Свойство  | Тип             | Описание                                                                                                         |
+|-----------|-----------------|------------------------------------------------------------------------------------------------------------------|
+| items     | список          | Список услуг:                                                                                                    |
+| id        | string          | ID услуги. Понадобится далее, чтобы по ID добавлять её в корзину                                                 |
+| sectionId | string          | ID раздела, к которому привязана услуга                                                                          |
+| name      | string          | Название услуги                                                                                                  |
+| price     | number          | Цена услуги                                                                                                      |
+| sale      | number или null | Цена услуги уже со скидкой (может быть null, если скидка отсутствует)                                            |
+| saleText  | string          | Описание акции.                                                                                                  |
+| saleNote  | string          | Примечание к акции. Это та часть, которая после ТОЧКИ идёт. Если этот пункт непонятен, напиши, объясню подробнее |
+| sections  | список          | Список разделов:                                                                                                 |
+| id        | string          | ID раздела. Связано с sectionId                                                                                  |
+| name      | string          | Название раздела                                                                                                 |
+
+#### POST `mobile-api/cart`
+
+Добавить услугу в корзину на сервере.  
+Тело запроса должно быть таким:
+```json
+{
+  "workId": "БП-45678"
+}
+```
+*workId* можно получить из запроса [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid).  
+
+В ответе будет вся корзина клиента.  
+Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
+
+#### GET `mobile-api/cart`
+
+Метод для получения корзины пользователя.  
+Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
+
+#### DELETE `mobile-api/cart/{id}`
+
+Метод для удаления услуги из корзины.  
+В строке запроса нужна id работы.  
+
+В ответе будет вся корзина клиента.  
+Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
