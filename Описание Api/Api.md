@@ -38,9 +38,9 @@
 - GET `mobile-api/carcenter/works/{centerId}` - Получить список работ по городу и ID автосервиса. Для этапа оформления записи. [ссылка](#get-mobile-apicarcenterworkscenterid)
 
 ### Раздел Cart
-- POST `mobile-api/cart` - добавить работу в корзину для заказа. [ссылка](#post-mobile-apicart)
-- GET `mobile-api/cart` - получить корзину клиента. [ссылка](#get-mobile-apicart)
-- DELETE `mobile-api/cart/{id}` - удалить услугу из корзины клиента. [ссылка](#delete-mobile-apicartid)
+- POST `mobile-api/cart/update` - добавить работу в корзину для заказа. [ссылка](#post-mobile-apicart)
+- POST `mobile-api/cart/get` - получить корзину клиента. [ссылка](#get-mobile-apicart)
+- POST `mobile-api/cart/delete` - удалить услугу из корзины клиента. [ссылка](#delete-mobile-apicartid)
 
 ### Раздел Order
 - GET `mobile-api/order/available-time/{centerId}` - Получить временные окна для записи на обслуживание.
@@ -216,29 +216,49 @@ if (response.status == 409)
 | id        | string          | ID раздела. Связано с sectionId                                                                                  |
 | name      | string          | Название раздела                                                                                                 |
 
-#### POST `mobile-api/cart`
+#### POST `mobile-api/cart/update`
 
-Добавить услугу в корзину на сервере.  
+Добавление услуги в корзину на сервере.  
+
 Тело запроса должно быть таким:
 ```json
 {
-  "workId": "БП-45678"
+  "workId": "БП-45678",
+  "carCenterId": "ИБ-5678"
 }
 ```
 *workId* можно получить из запроса [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid).  
+*carCenterId* уже должен был быть получен из поля `slug` в запросе GET `mobile-api/carcenter/{city}`.
 
 В ответе будет вся корзина клиента.  
-Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
+Формат ответа будет таким же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
 
-#### GET `mobile-api/cart`
+#### POST `mobile-api/cart/get`
 
 Метод для получения корзины пользователя.  
-Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
 
-#### DELETE `mobile-api/cart/{id}`
-
-Метод для удаления услуги из корзины.  
-В строке запроса нужна id работы.  
+В запросе нужно указать ID автосервиса:  
+```json
+{
+  "carCenterId": "ИБ-5678"
+}
+```
+*carCenterId* уже должен был быть получен из поля `slug` в запросе GET `mobile-api/carcenter/{city}`.
 
 В ответе будет вся корзина клиента.  
-Формат будет такой же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
+Формат ответа будет таким же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
+
+#### POST `mobile-api/cart/delete`
+
+Метод для удаления услуги из корзины.  
+
+Тело запроса должно быть таким:
+```json
+{
+  "workId": "БП-45678",
+  "carCenterId": "ИБ-5678"
+}
+```
+
+В ответе будет вся корзина клиента.  
+Формат ответа будет таким же как в [GET mobile-api/carcenter/works/{centerId}](#get-mobile-apicarcenterworkscenterid)
