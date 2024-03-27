@@ -337,7 +337,10 @@ if (response.status == 409)
       "phone": "+7123456789",
       "gosNumber": "АА000А",
       "region": "186",
-      "summa": 1680,
+      "summa": {
+        "full": 1650,
+        "sale": 1150
+      }
       "odometer": ""
     }
   ]
